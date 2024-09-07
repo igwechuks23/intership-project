@@ -15,7 +15,6 @@ jobs:
       # Step 1: Check out the repository code
       - name: Checkout Code
         uses: actions/checkout@v2
-        # This action checks out your repository code so subsequent steps can access it.
 
       # Step 2: Set up the Node.js environment (using Node.js version 16)
       - name: Set up Node.js
@@ -26,19 +25,27 @@ jobs:
       # Step 3: Install dependencies based on your package.json file
       - name: Install Dependencies
         run: npm install
-        # This installs all project dependencies required to run the application.
 
       # Step 4: Build the application to prepare for testing and deployment
       - name: Build Application
         run: npm run build
-        # This will compile or bundle your application, making it ready for testing and deployment.
 
       # Step 5: Run unit and integration tests to ensure everything is working
       - name: Run Tests
         run: npm test
-        # This will execute your test suite, validating the application's functionality.
 
-      # Step 6: Deploy to the staging environment upon successful build and test completion
+      # Step 6: Build Docker image and push to Docker Hub
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t myapp:${{ github.sha }} .
+          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+          docker tag myapp:${{ github.sha }} mydockerhubusername/myapp:${{ github.sha }}
+          docker push mydockerhubusername/myapp:${{ github.sha }}
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      # Step 7: Deploy to the staging environment
       - name: Deploy to Staging via SSH
         uses: appleboy/ssh-action@v0.1.2
         with:
@@ -46,7 +53,5 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /path/to/app && \
-            git pull origin main && \
-            docker-compose down && \
-            docker-compose up -d
+            docker pull mydockerhubusername/myapp:${{ github.sha }}
+            docker-compose -f /path/to/docker-compose.yml up --build -d
