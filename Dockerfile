@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # Build the application (if necessary, e.g., for TypeScript or front-end build steps)
-# RUN npm run build
+RUN npm run build
 
 # Expose the port on which the application will run
 EXPOSE 3000
