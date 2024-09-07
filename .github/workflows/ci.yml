@@ -1,0 +1,52 @@
+name: CI Pipeline
+
+# This pipeline triggers when changes are pushed to the 'main' branch.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Use the latest version of Ubuntu as the runner environment.
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        # This action checks out your repository code so subsequent steps can access it.
+
+      # Step 2: Set up the Node.js environment (using Node.js version 16)
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      # Step 3: Install dependencies based on your package.json file
+      - name: Install Dependencies
+        run: npm install
+        # This installs all project dependencies required to run the application.
+
+      # Step 4: Build the application to prepare for testing and deployment
+      - name: Build Application
+        run: npm run build
+        # This will compile or bundle your application, making it ready for testing and deployment.
+
+      # Step 5: Run unit and integration tests to ensure everything is working
+      - name: Run Tests
+        run: npm test
+        # This will execute your test suite, validating the application's functionality.
+
+      # Step 6: Deploy to the staging environment upon successful build and test completion
+      - name: Deploy to Staging via SSH
+        uses: appleboy/ssh-action@v0.1.2
+        with:
+          host: ${{ secrets.STAGING_SERVER_IP }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/app && \
+            git pull origin main && \
+            docker-compose down && \
+            docker-compose up -d
